@@ -284,9 +284,10 @@ def mb_conv_block(inputs, block_args, activation, drop_rate=None, prefix='', fre
             s == 1 for s in block_args.strides
     ) and block_args.input_filters == block_args.output_filters:
         if drop_rate and (drop_rate > 0):
-            x = Dropout(drop_rate,
-                        noise_shape=(None, 1, 1, 1),
-                        name=prefix + 'drop')(x)
+            pass
+            #x = Dropout(drop_rate,
+            #            noise_shape=(None, 1, 1, 1),
+            #            name=prefix + 'drop')(x)
         x = layers.add([x, inputs], name=prefix + 'add')
 
     return x

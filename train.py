@@ -270,7 +270,7 @@ def parse_args(args):
     parser.add_argument('--phi', help='Hyper parameter phi', default=0, type=int, choices=(0, 1, 2, 3, 4, 5, 6))
     parser.add_argument('--gpu', help='Id of the GPU to use (as reported by nvidia-smi).')
     parser.add_argument('--epochs', help='Number of epochs to train.', type=int, default=50)
-    parser.add_argument('--steps', help='Number of steps per epoch.', type=int, default=10000)
+    parser.add_argument('--steps', help='Number of steps per epoch.', type=int, default=100)
     parser.add_argument('--snapshot-path',
                         help='Path to store snapshots of models during training',
                         default='checkpoints/{}'.format(today))
@@ -331,6 +331,12 @@ def main(args=None):
         else:
             print('Loading model, this may take a second...')
             model.load_weights(args.snapshot, by_name=True)
+            model.compile(optimizer=Adam(lr=1e-3), loss={'classification': focal()})
+            with tf.Session() as sess:
+                sess.run(tf.global_variables_initializer())
+                saver = tf.train.Saver()
+                saver.save(sess, './model.ckpt')
+            return
 
     # freeze backbone layers
     if args.freeze_backbone:
