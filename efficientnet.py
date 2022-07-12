@@ -37,6 +37,7 @@ from six.moves import xrange
 from keras_applications.imagenet_utils import _obtain_input_shape
 from keras_applications.imagenet_utils import decode_predictions
 from keras_applications.imagenet_utils import preprocess_input as _preprocess_input
+import tensorflow as tf
 
 from utils import get_submodules_from_kwargs
 from layers import BatchNormalization
@@ -96,19 +97,19 @@ BlockArgs.__new__.__defaults__ = (None,) * len(BlockArgs._fields)
 
 DEFAULT_BLOCKS_ARGS = [
     BlockArgs(kernel_size=3, num_repeat=1, input_filters=32, output_filters=16,
-              expand_ratio=1, id_skip=True, strides=[1, 1], se_ratio=0.25),
+              expand_ratio=1, id_skip=True, strides=[1, 1], se_ratio=0.0),
     BlockArgs(kernel_size=3, num_repeat=2, input_filters=16, output_filters=24,
-              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25),
+              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.0),
     BlockArgs(kernel_size=5, num_repeat=2, input_filters=24, output_filters=40,
-              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25),
+              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.0),
     BlockArgs(kernel_size=3, num_repeat=3, input_filters=40, output_filters=80,
-              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25),
+              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.0),
     BlockArgs(kernel_size=5, num_repeat=3, input_filters=80, output_filters=112,
-              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.25),
+              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.0),
     BlockArgs(kernel_size=5, num_repeat=4, input_filters=112, output_filters=192,
-              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.25),
+              expand_ratio=6, id_skip=True, strides=[2, 2], se_ratio=0.0),
     BlockArgs(kernel_size=3, num_repeat=1, input_filters=192, output_filters=320,
-              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.25)
+              expand_ratio=6, id_skip=True, strides=[1, 1], se_ratio=0.0)
 ]
 
 CONV_KERNEL_INITIALIZER = {
@@ -151,11 +152,11 @@ def get_swish(**kwargs):
             try:
                 # The native TF implementation has a more
                 # memory-efficient gradient implementation
-                return backend.tf.nn.swish(x)
+                return backend.tf.nn.relu(x)
             except AttributeError:
                 pass
 
-        return x * backend.sigmoid(x)
+        return tf.nn.relu(x)
 
     return swish
 
