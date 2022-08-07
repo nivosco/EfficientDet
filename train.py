@@ -260,10 +260,12 @@ def parse_args(args):
                             help='Path to CSV file containing annotations for validation (optional).')
     parser.add_argument('--detect-quadrangle', help='If to detect quadrangle.', action='store_true', default=False)
     parser.add_argument('--detect-text', help='If is text detection task.', action='store_true', default=False)
+    parser.add_argument('--save-ckpt', help='If is text detection task.', action='store_true', default=False)
 
     parser.add_argument('--snapshot', help='Resume training from a snapshot.')
     parser.add_argument('--freeze-backbone', help='Freeze training of backbone layers.', action='store_true')
     parser.add_argument('--freeze-bn', help='Freeze training of BatchNormalization layers.', action='store_true')
+    parser.add_argument('--lr', help='Learning Rate', type=float, default=1e-3)
     parser.add_argument('--weighted-bifpn', help='Use weighted BiFPN', action='store_true')
 
     parser.add_argument('--batch-size', help='Size of the batches.', default=1, type=int)
@@ -331,12 +333,14 @@ def main(args=None):
         else:
             print('Loading model, this may take a second...')
             model.load_weights(args.snapshot, by_name=True)
-            model.compile(optimizer=Adam(lr=1e-3), loss={'classification': focal()})
-            with tf.Session() as sess:
-                sess.run(tf.global_variables_initializer())
-                saver = tf.train.Saver()
-                saver.save(sess, './model.ckpt')
-            return
+            model.compile(optimizer=Adam(lr=args.lr), loss={'classification': focal()})
+            if args.save_ckpt:
+                with tf.Session() as sess:
+                    sess.run(tf.global_variables_initializer())
+                    saver = tf.train.Saver()
+                    saver.save(sess, './model.ckpt')
+                    print('Saved CKPT, quiting...')
+                    return
 
     # freeze backbone layers
     if args.freeze_backbone:
@@ -348,7 +352,7 @@ def main(args=None):
         model = keras.utils.multi_gpu_model(model, gpus=list(map(int, args.gpu.split(','))))
 
     # compile model
-    model.compile(optimizer=Adam(lr=1e-3), loss={
+    model.compile(optimizer=Adam(lr=args.lr), loss={
         'regression': smooth_l1_quad() if args.detect_quadrangle else smooth_l1(),
         'classification': focal()
     }, )

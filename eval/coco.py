@@ -17,7 +17,7 @@ limitations under the License.
 # import keras
 from tensorflow import keras
 import tensorflow as tf
-
+import argparse as ap
 from pycocotools.cocoeval import COCOeval
 import numpy as np
 import json
@@ -97,16 +97,16 @@ def evaluate(generator, model, threshold=0.01):
     json.dump(image_ids, open('{}_processed_image_ids.json'.format(generator.set_name), 'w'), indent=4)
 
     # # load results in COCO evaluation tool
-    # coco_true = generator.coco
-    # coco_pred = coco_true.loadRes('{}_bbox_results.json'.format(generator.set_name))
-    #
-    # # run COCO evaluation
-    # coco_eval = COCOeval(coco_true, coco_pred, 'bbox')
-    # coco_eval.params.imgIds = image_ids
-    # coco_eval.evaluate()
-    # coco_eval.accumulate()
-    # coco_eval.summarize()
-    # return coco_eval.stats
+    coco_true = generator.coco
+    coco_pred = coco_true.loadRes('{}_bbox_results.json'.format(generator.set_name))
+    
+    # run COCO evaluation
+    coco_eval = COCOeval(coco_true, coco_pred, 'bbox')
+    coco_eval.params.imgIds = image_ids
+    coco_eval.evaluate()
+    coco_eval.accumulate()
+    coco_eval.summarize()
+    return coco_eval.stats
 
 
 class Evaluate(keras.callbacks.Callback):
@@ -163,21 +163,29 @@ class Evaluate(keras.callbacks.Callback):
 if __name__ == '__main__':
     from model import efficientdet
     import os
+    import sys
     from generators.coco import CocoGenerator
+    parser = ap.ArgumentParser(description='simple eval script for COCO')
+    parser.add_argument('--phi', help='Hyper parameter phi', default=0, type=int, choices=(0, 1, 2, 3, 4, 5, 6))
+    parser.add_argument('--gpu', help='Id of the GPU to use (as reported by nvidia-smi).', default='0')
+    parser.add_argument('--weighted-bifpn', help='Use weighted BiFPN', action='store_true')
+    parser.add_argument('--batch-size', help='Size of the batches.', default=1, type=int)
+    parser.add_argument('--coco-path', help='Path to dataset directory (ie. /tmp/COCO).')
+    args = sys.argv[1:]
+    args = parser.parse_args(args)
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-
-    phi = 2
-    weighted_bifpn = True
-    model_path = 'efficientdet-d2.h5'
+    phi = args.phi
+    weighted_bifpn = args.weighted_bifpn
+    model_path = f'efficientdet-d{args.phi}.h5'
     common_args = {
-        'batch_size': 1,
+        'batch_size': args.batch_size,
         'phi': phi,
     }
 
     test_generator = CocoGenerator(
-        'datasets/coco',
-        'test-dev2017',
+        args.coco_path,
+        'val2017',
         shuffle_groups=False,
         **common_args
     )
@@ -186,3 +194,4 @@ if __name__ == '__main__':
                                            score_threshold=0.01)
     prediction_model.load_weights(model_path, by_name=True)
     evaluate(test_generator, prediction_model, threshold=0.01)
+
